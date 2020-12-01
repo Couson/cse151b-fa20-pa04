@@ -16,8 +16,13 @@ def get_model(config_data, vocab):
     resnet50 = models.resnet50(pretrained = True)
     resnet50.fc=nn.Linear(2048, embedding_size)
     
-    
-    embed = Embedding(len(vocab), embedding_size)
-    lstm = LSTM(input_size=embedding_size, hidden_size=hidden_size, num_layers = 1, batch_first=True)
-    
-    raise NotImplementedError("Model Factory Not Implemented")
+    if model_type == 'LSTM':
+        embed = Embedding(len(vocab), embedding_size)
+        lstm = LSTM(input_size=embedding_size, hidden_size=hidden_size, num_layers = 1, batch_first=True)
+        return {'cnn': resnet50, 'embed': embed, 'rnn' = lstm}
+    elif model_type == 'RNN':
+        embed = Embedding(len(vocab), embedding_size)
+        return {'cnn': resnet50, 'embed': embed, 'rnn' = lstm}
+    else:
+        raise ValueError('Invalid Model Name')
+        

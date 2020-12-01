@@ -45,7 +45,7 @@ class Experiment(object):
         self.__model = get_model(config_data, self.__vocab)
 
         # TODO: Set these Criterion and Optimizers Correctly
-        self.__criterion = torch.nn.NLLloss()
+        self.__criterion = torch.nn.NLLLoss()
         self.__optimizer = torch.optim.Adam()
 
         self.__init_model()
