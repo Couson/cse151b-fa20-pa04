@@ -119,7 +119,7 @@ class Experiment(object):
                     images = images.cuda()
                     captions = captions.cuda()
                 
-                
+                outputs = self.__model(images, captions)
 
 
         self.__val_losses.append(val_loss)
