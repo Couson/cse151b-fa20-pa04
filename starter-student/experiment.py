@@ -39,6 +39,7 @@ class Experiment(object):
         self.__current_epoch = 0
         self.__training_losses = []
         self.__val_losses = []
+        self.__learning_rate = self.__epochs = config_data['experiment']['learning_rate']
         self.__best_model = None  # Save your best model in this field and use this in test method.
 
         # Init Model
@@ -90,7 +91,8 @@ class Experiment(object):
     def __train(self):
         self.__model.train()
         training_loss = 0
-
+        params = list(self.__model.linear.parameters()) + list(self.__model.lstm.parameters()) + list(self.__model.embed.parameters()) + list(self.__model.fc.parameters())
+        self.__optimizer = self.__optimizer(params = params, lr = self.__learning_rate)
         for i, (images, captions, _) in enumerate(self.__train_loader):
             if torch.cuda.is_available():
                 images = images.cuda()
@@ -103,10 +105,11 @@ class Experiment(object):
             loss.backward()
             self.__optimizer.step()
             training_loss += loss.item()
-            print("BATCH:" + i)
-            print("Training Loss:" + training_loss)
-        self.__training_losses.append(training_loss)
-        return training_loss
+            if i % 100 == 0:
+                print("BATCH:" + i)
+                print("Training Loss:" + training_loss)
+        self.__training_losses.append(training_loss/i)
+        return training_loss/i
 
     # TODO: Perform one Pass on the validation set and return loss value. You may also update your best model here.
     def __val(self):
@@ -120,10 +123,11 @@ class Experiment(object):
                     captions = captions.cuda()
                 
                 outputs = self.__model(images, captions)
+                loss = self.__criterion(outputs.view(-1, len(self.__vocab)), captions.view(-1))
+                val_loss += loss.item()
 
-
-        self.__val_losses.append(val_loss)
-        return val_loss
+        self.__val_losses.append(val_loss/i)
+        return val_loss/i
 
     # TODO: Implement your test function here. Generate sample captions and evaluate loss and
     #  bleu scores using the best model. Use utility functions provided to you in caption_utils.
@@ -136,14 +140,23 @@ class Experiment(object):
 
         with torch.no_grad():
             for iter, (images, captions, img_ids) in enumerate(self.__test_loader):
-                raise NotImplementedError()
+                if torch.cuda.is_available():
+                    images = images.cuda()
+                    captions = captions.cuda()
+                
+                outputs = self.__model(images, captions)
+                loss = self.__criterion(outputs.view(-1, len(self.__vocab)), captions.view(-1))
+                test_loss += loss.item()
 
-        result_str = "Test Performance: Loss: {}, Perplexity: {}, Bleu1: {}, Bleu4: {}".format(test_loss,
+
+
+
+        result_str = "Test Performance: Loss: {}, Perplexity: {}, Bleu1: {}, Bleu4: {}".format(test_loss/iter,
                                                                                                bleu1,
                                                                                                bleu4)
         self.__log(result_str)
 
-        return test_loss, bleu1, bleu4
+        return test_loss/iter, bleu1, bleu4
 
     def __save_model(self):
         root_model_path = os.path.join(self.__experiment_dir, 'latest_model.pt')
