@@ -19,6 +19,7 @@ def get_model(config_data, vocab):
     if model_type == 'LSTM':
         embed = Embedding(len(vocab), embedding_size)
         lstm = LSTM(input_size=embedding_size, hidden_size=hidden_size, num_layers = 1, batch_first=True)
+        fc = nn.Linear(hidden_size, len(vocab))
         return {'cnn': resnet50, 'embed': embed, 'rnn' = lstm}
     elif model_type == 'RNN':
         embed = Embedding(len(vocab), embedding_size)

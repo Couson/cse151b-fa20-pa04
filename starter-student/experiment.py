@@ -92,10 +92,20 @@ class Experiment(object):
         training_loss = 0
 
         for i, (images, captions, _) in enumerate(self.__train_loader):
-            self.__model(images, captions)
-            
-#             raise NotImplementedError()
+            if torch.cuda.is_available():
+                images = images.cuda()
+                captions = captions.cuda()
 
+            outputs = self.__model(images, captions)
+            loss = self.__criterion(outputs.view(-1, len(self.__vocab)), captions.view(-1))
+            
+            self.__optimizer.zero_grad()
+            loss.backward()
+            self.__optimizer.step()
+            training_loss += loss.item()
+            print("BATCH:" + i)
+            print("Training Loss:" + training_loss)
+        self.__training_losses.append(training_loss)
         return training_loss
 
     # TODO: Perform one Pass on the validation set and return loss value. You may also update your best model here.
@@ -105,8 +115,14 @@ class Experiment(object):
 
         with torch.no_grad():
             for i, (images, captions, _) in enumerate(self.__val_loader):
-                raise NotImplementedError()
+                if torch.cuda.is_available():
+                    images = images.cuda()
+                    captions = captions.cuda()
+                
+                
 
+
+        self.__val_losses.append(val_loss)
         return val_loss
 
     # TODO: Implement your test function here. Generate sample captions and evaluate loss and
