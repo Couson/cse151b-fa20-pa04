@@ -39,7 +39,7 @@ class Experiment(object):
         self.__current_epoch = 0
         self.__training_losses = []
         self.__val_losses = []
-        self.__learning_rate = self.__epochs = config_data['experiment']['learning_rate']
+        self.__learning_rate = config_data['experiment']['learning_rate']
         self.__best_model = None  # Save your best model in this field and use this in test method.
 
         # Init Model
@@ -47,7 +47,7 @@ class Experiment(object):
 
         # TODO: Set these Criterion and Optimizers Correctly
         self.__criterion = torch.nn.NLLLoss()
-        self.__optimizer = torch.optim.Adam()
+        self.__optimizer = torch.optim.Adam
 
         self.__init_model()
 
@@ -77,7 +77,8 @@ class Experiment(object):
 
     # Main method to run your experiment. Should be self-explanatory.
     def run(self):
-        start_epoch = self.__current_epoch
+        start_epoch = int(self.__current_epoch)
+        print(start_epoch, self.__epochs)
         for epoch in range(start_epoch, self.__epochs):  # loop over the dataset multiple times
             start_time = datetime.now()
             self.__current_epoch = epoch
@@ -106,8 +107,8 @@ class Experiment(object):
             self.__optimizer.step()
             training_loss += loss.item()
             if i % 100 == 0:
-                print("BATCH:" + i)
-                print("Training Loss:" + training_loss)
+                print("BATCH:" + str(i))
+                print("Training Loss:" + str(training_loss))
         self.__training_losses.append(training_loss/i)
         return training_loss/i
 
