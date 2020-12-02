@@ -140,7 +140,7 @@ class Experiment(object):
         bleu4 = 0
 
         with torch.no_grad():
-            for iter, (images, captions, img_ids) in enumerate(self.__test_loader):
+            for i, (images, captions, _) in enumerate(self.__test_loader):
                 if torch.cuda.is_available():
                     images = images.cuda()
                     captions = captions.cuda()
@@ -148,6 +148,35 @@ class Experiment(object):
                 outputs = self.__model(images, captions)
                 loss = self.__criterion(outputs.view(-1, len(self.__vocab)), captions.view(-1))
                 test_loss += loss.item()
+
+            for iter, (images, captions, img_ids) in enumerate(self.__test_loader):
+                if torch.cuda.is_available():
+                    images = images.cuda()
+                    captions = captions.cuda()
+                    
+                    batch_bleu_1 = 0.0
+                    batch_bleu_4 = 0.0
+
+                    for i in range(len(outputs)):
+                        predicted_ids = []
+                        for scores in outputs[i]:
+                            # Find the index of the token that has the max score
+                            predicted_ids.append(scores.argmax().item())
+                        # Convert word ids to actual words
+                        predicted_word_list = word_list(predicted_ids, vocab)
+                        caption_word_list = word_list(captions[i].numpy(), vocab)
+                        # Calculate Bleu-4 score and append it to the batch_bleu_4 list
+                        batch_bleu_1 += bleu1([caption_word_list], predicted_word_list)
+                        batch_bleu_4 += bleu4([caption_word_list], predicted_word_list)
+
+
+
+                    batch_bleu_4 += sentence_bleu([caption_word_list], 
+                                               predicted_word_list, 
+                                               smoothing_function=smoothing.method1)
+                    total_bleu_4 += batch_bleu_4 / len(outputs)
+
+
 
 
 
@@ -157,7 +186,7 @@ class Experiment(object):
                                                                                                bleu4)
         self.__log(result_str)
 
-        return test_loss/iter, bleu1, bleu4
+        return test_loss/i, bleu1, bleu4
 
     def __save_model(self):
         root_model_path = os.path.join(self.__experiment_dir, 'latest_model.pt')

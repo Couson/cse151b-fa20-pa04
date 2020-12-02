@@ -36,6 +36,7 @@ def get_datasets(config_data):
                                             config_data)
     val_data_loader = get_coco_dataloader(val_ids_file_path, root_val, train_annotation_file, coco, vocabulary,
                                           config_data)
+    config_data['batch_size'] = config_data['test_batch_size']
     test_data_loader = get_coco_dataloader(test_ids_file_path, root_test, test_annotation_file, coco_test, vocabulary,
                                            config_data)
 
