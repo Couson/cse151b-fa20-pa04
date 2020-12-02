@@ -16,8 +16,6 @@ def get_model(config_data, vocab):
     model_type = config_data['model']['model_type']
 
     # You may add more parameters if you want
-    resnet50 = models.resnet50(pretrained = True)
-    resnet50.fc=nn.Linear(2048, embedding_size)
     
     if model_type == 'LSTM':
         return cnnLSTM(hidden_size, embedding_size, vocab)
