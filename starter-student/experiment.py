@@ -110,10 +110,6 @@ class Experiment(object):
             self.__optimizer.zero_grad()
             loss.backward()
             self.__optimizer.step()
-            
-            if i % 100 == 0:
-                print("BATCH:" + str(i))
-                print("Training Loss:" + str(training_loss))
 
         return training_loss/i
 
