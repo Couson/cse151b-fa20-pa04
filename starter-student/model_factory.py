@@ -64,7 +64,7 @@ class cnnLSTM(nn.Module):
                     outputs = self.linear(hiddens.squeeze(1))
 
                 predicted = outputs.argmax(1)
-                sampled_ids.append(predicted.item())
+                sampled_ids.append(predicted)
 
             return sampled_ids
 
