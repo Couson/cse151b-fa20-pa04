@@ -100,7 +100,7 @@ class cnnRNN(nn.Module):
         self.resnet = nn.Sequential(*modules)
         self.fc = nn.Linear(resnet.fc.in_features, embedding_size)
         self.embed = Embedding(len(vocab), embedding_size)
-        self.rnn = nn.rnn(input_size=embedding_size, hidden_size=hidden_size, num_layers = 1, batch_first=True)
+        self.RNN = nn.RNN(input_size=embedding_size, hidden_size=hidden_size, num_layers = 1, batch_first=True)
         self.linear = nn.Linear(hidden_size, len(vocab))
 
     def forward(self, images, captions):
@@ -109,6 +109,6 @@ class cnnRNN(nn.Module):
         features = self.fc(features.view(features.size(0), -1))
         embeddings = self.embed(captions[:,:-1])
         inputs = torch.cat((features.unsqueeze(1), embeddings), 1)
-        hiddens, _ = self.rnn(inputs)
+        hiddens, _ = self.RNN(inputs)
         return self.linear(hiddens)
         
