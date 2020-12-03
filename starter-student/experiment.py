@@ -80,7 +80,7 @@ class Experiment(object):
     # Main method to run your experiment. Should be self-explanatory.
     def run(self):
         start_epoch = int(self.__current_epoch)
-        params = list(self.__model.linear.parameters()) + list(self.__model.lstm.parameters()) + list(self.__model.embed.parameters()) + list(self.__model.fc.parameters())
+        params = list(self.__model.linear.parameters()) + list(self.__model.decoder.parameters()) + list(self.__model.embed.parameters()) + list(self.__model.fc.parameters())
         self.__optimizer = self.__optimizer(params = params, lr = self.__learning_rate)
         
         for epoch in range(start_epoch, self.__epochs):  # loop over the dataset multiple times
