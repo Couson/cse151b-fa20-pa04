@@ -9,6 +9,7 @@ import numpy as np
 import torch
 from datetime import datetime
 
+import nltk
 from caption_utils import *
 from constants import ROOT_STATS_DIR
 from dataset_factory import get_datasets
@@ -157,20 +158,36 @@ class Experiment(object):
                 if torch.cuda.is_available():
                     images = images.cuda()
                     captions = captions.cuda()
-                captions = captions[:,0]                   
+
                 batch_bleu_1 = 0.0
                 batch_bleu_4 = 0.0
+                
 
-                for i in range(self.__generation_config['max_length']):
+                for j in range(len(captions)):
                     predicted_word_list = []
+                    features = self.__model.resnet(images[j])
+                    features = self.__model.fc(features.view(features.size(0), -1))
                     
-                    for scores in outputs[i]:
-                        predicted_id = F.gumbel_softmax(scores, tau= self.__generation_config['temperature'])
+                    embeddings = self.__model.embed(captions[j,0])
+
+                    inputs = torch.cat((features.unsqueeze(1), embeddings), 1)
+                    output, hidden = self.__model.lstm(features)
+                    output = self.__model.linear(output)
+
+                    for _ in range(self.__generation_config['max_length']):
+                        
+                        embeddings = self.__model.embed(output)
+                        output, hidden = self.__model.lstm(features, hidden)
+                        output = self.__model.linear(output)
+
+
+                        probabilities = F.softmax(output.div(self.__generation_config['temperature']).squeeze(0).squeeze(0), dim=1) 
+                        predicted_id = torch.multinomial(probabilities.data, 1)
                         predicted_word = self.__vocab(predicted_id)
                         predicted_word_list.append(predicted_word)
 
                     caption_word_list = self.__coco_test.loadAnns(img_ids)
-
+                    caption_word_list = [nltk.tokenize.word_tokenize(str(cap).lower()) for cap in caption_word_list]
                     batch_bleu_1 += bleu1(caption_word_list, predicted_word_list)
                     batch_bleu_4 += bleu4(caption_word_list, predicted_word_list)
 
