@@ -56,7 +56,7 @@ class cnnLSTM(nn.Module):
                     with torch.no_grad():
                         features = self.resnet(images)
                     inputs = self.fc(features.view(features.size(0), -1)).unsqueeze(1)
-                    hiddens, states = self.lstm(features)
+                    hiddens, states = self.lstm(inputs)
                     outputs = self.linear(hiddens.squeeze(1))
                 else:
                     inputs = self.embed(predicted).unsqueeze(1)
@@ -74,7 +74,7 @@ class cnnLSTM(nn.Module):
                     with torch.no_grad():
                         features = self.resnet(images)
                     inputs = self.fc(features.view(features.size(0), -1)).unsqueeze(1)
-                    hiddens, states = self.lstm(features)
+                    hiddens, states = self.lstm(inputs)
                     outputs = self.linear(hiddens.squeeze(1))
                 else:
                     inputs = self.embed(predicted)
