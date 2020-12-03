@@ -36,7 +36,7 @@ class cnnLSTM(nn.Module):
         self.resnet = nn.Sequential(*modules)
         self.fc = nn.Linear(resnet.fc.in_features, embedding_size)
         self.embed = Embedding(len(vocab), embedding_size)
-        self.lstm = LSTM(input_size=embedding_size, hidden_size=hidden_size, num_layers = 1, batch_first=True)
+        self.decoder = LSTM(input_size=embedding_size, hidden_size=hidden_size, num_layers = 1, batch_first=True)
         self.linear = nn.Linear(hidden_size, len(vocab))
 
     def forward(self, images, captions):
@@ -45,7 +45,7 @@ class cnnLSTM(nn.Module):
         features = self.fc(features.view(features.size(0), -1))
         embeddings = self.embed(captions[:,:-1])
         inputs = torch.cat((features.unsqueeze(1), embeddings), 1)
-        hiddens, _ = self.lstm(inputs)
+        hiddens, _ = self.decoder(inputs)
         return self.linear(hiddens)
 
     def sample(self, images, max_len, deter, temp = None):
@@ -56,11 +56,11 @@ class cnnLSTM(nn.Module):
                     with torch.no_grad():
                         features = self.resnet(images)
                     inputs = self.fc(features.view(features.size(0), -1)).unsqueeze(1)
-                    hiddens, states = self.lstm(inputs)
+                    hiddens, states = self.decoder(inputs)
                     outputs = self.linear(hiddens.squeeze(1))
                 else:
                     inputs = self.embed(predicted).unsqueeze(1)
-                    hiddens, states = self.lstm(inputs, states)
+                    hiddens, states = self.decoder(inputs, states)
                     outputs = self.linear(hiddens.squeeze(1))
 
                 predicted = outputs.argmax(1)
@@ -74,11 +74,11 @@ class cnnLSTM(nn.Module):
                     with torch.no_grad():
                         features = self.resnet(images)
                     inputs = self.fc(features.view(features.size(0), -1)).unsqueeze(1)
-                    hiddens, states = self.lstm(inputs)
+                    hiddens, states = self.decoder(inputs)
                     outputs = self.linear(hiddens.squeeze(1))
                 else:
                     inputs = self.embed(predicted)
-                    hiddens, states = self.lstm(inputs, states)
+                    hiddens, states = self.decoder(inputs, states)
                     outputs = self.linear(hiddens.squeeze(1))
 
                 probabilities = F.softmax(outputs.div(temp).squeeze(0).squeeze(0), dim=1) 
@@ -100,7 +100,7 @@ class cnnRNN(nn.Module):
         self.resnet = nn.Sequential(*modules)
         self.fc = nn.Linear(resnet.fc.in_features, embedding_size)
         self.embed = Embedding(len(vocab), embedding_size)
-        self.RNN = nn.RNN(input_size=embedding_size, hidden_size=hidden_size, num_layers = 1, batch_first=True)
+        self.decoder = nn.RNN(input_size=embedding_size, hidden_size=hidden_size, num_layers = 1, batch_first=True)
         self.linear = nn.Linear(hidden_size, len(vocab))
 
     def forward(self, images, captions):
@@ -109,6 +109,6 @@ class cnnRNN(nn.Module):
         features = self.fc(features.view(features.size(0), -1))
         embeddings = self.embed(captions[:,:-1])
         inputs = torch.cat((features.unsqueeze(1), embeddings), 1)
-        hiddens, _ = self.RNN(inputs)
+        hiddens, _ = self.decoder(inputs)
         return self.linear(hiddens)
         
