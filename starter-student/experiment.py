@@ -170,7 +170,8 @@ class Experiment(object):
 
                     for _ in range(self.__generation_config['max_length']):
                         
-                        embeddings = self.__model.embed(output)
+                        embeddings = self.__model.embed(output).unsqueeze(0)
+                        print(embeddings.size())
                         output, hidden = self.__model.lstm(embeddings, hidden)
                         output = self.__model.linear(output)
 
