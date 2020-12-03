@@ -49,20 +49,13 @@ class cnnLSTM(nn.Module):
         return self.linear(hiddens)
 
     def sample(self, images, max_len, deter):
-
         sampled_ids = []
-        with torch.no_grad():
-            features = self.resnet(images)
-        features = self.fc(features.view(features.size(0), -1)).unsqueeze(1)
-        hiddens, states = self.lstm(features)
-        outputs = self.linear(hiddens.squeeze(1))
-
         if deter:
             for i in range(max_len):
                 if i == 0:
                     with torch.no_grad():
                         features = self.resnet(images)
-                    inputs = self.fc(features.view(features.size(0), -1))
+                    inputs = self.fc(features.view(features.size(0), -1)).unsqueeze(1)
                     hiddens, states = self.lstm(features)
                     outputs = self.linear(hiddens.squeeze(1))
                 else:
