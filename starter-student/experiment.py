@@ -14,6 +14,7 @@ from constants import ROOT_STATS_DIR
 from dataset_factory import get_datasets
 from file_utils import *
 from model_factory import get_model
+import torch.nn.functional as F
 
 
 # Class to encapsulate a neural experiment.
@@ -98,7 +99,7 @@ class Experiment(object):
             if torch.cuda.is_available():
                 images = images.cuda()
                 captions = captions.cuda()
-
+            
             outputs = self.__model(images, captions)
             loss = self.__criterion(outputs.view(-1, len(self.__vocab)), captions.view(-1))
             
@@ -122,6 +123,7 @@ class Experiment(object):
                 if torch.cuda.is_available():
                     images = images.cuda()
                     captions = captions.cuda()
+
                 
                 outputs = self.__model(images, captions)
                 loss = self.__criterion(outputs.view(-1, len(self.__vocab)), captions.view(-1))
@@ -136,57 +138,56 @@ class Experiment(object):
     def test(self):
         self.__model.eval()
         test_loss = 0
-        bleu1 = 0
-        bleu4 = 0
-
+        bleu_1 = 0
+        bleu_4 = 0
+        
         with torch.no_grad():
             for i, (images, captions, _) in enumerate(self.__test_loader):
                 if torch.cuda.is_available():
                     images = images.cuda()
                     captions = captions.cuda()
-                
+  
                 outputs = self.__model(images, captions)
                 loss = self.__criterion(outputs.view(-1, len(self.__vocab)), captions.view(-1))
                 test_loss += loss.item()
+
+            
 
             for iter, (images, captions, img_ids) in enumerate(self.__test_loader):
                 if torch.cuda.is_available():
                     images = images.cuda()
                     captions = captions.cuda()
+                captions = captions[:,0]                   
+                batch_bleu_1 = 0.0
+                batch_bleu_4 = 0.0
+
+                for i in range(self.__generation_config['max_length']):
+                    predicted_word_list = []
                     
-                    batch_bleu_1 = 0.0
-                    batch_bleu_4 = 0.0
+                    for scores in outputs[i]:
+                        predicted_id = F.gumbel_softmax(scores, tau= self.__generation_config['temperature'])
+                        predicted_word = self.__vocab(predicted_id)
+                        predicted_word_list.append(predicted_word)
 
-                    for i in range(len(outputs)):
-                        predicted_ids = []
-                        for scores in outputs[i]:
-                            # Find the index of the token that has the max score
-                            predicted_ids.append(scores.argmax().item())
-                        # Convert word ids to actual words
-                        predicted_word_list = word_list(predicted_ids, vocab)
-                        caption_word_list = word_list(captions[i].numpy(), vocab)
-                        # Calculate Bleu-4 score and append it to the batch_bleu_4 list
-                        batch_bleu_1 += bleu1([caption_word_list], predicted_word_list)
-                        batch_bleu_4 += bleu4([caption_word_list], predicted_word_list)
+                    caption_word_list = self.__coco_test.loadAnns(img_ids)
 
+                    batch_bleu_1 += bleu1(caption_word_list, predicted_word_list)
+                    batch_bleu_4 += bleu4(caption_word_list, predicted_word_list)
 
-
-                    batch_bleu_4 += sentence_bleu([caption_word_list], 
-                                               predicted_word_list, 
-                                               smoothing_function=smoothing.method1)
-                    total_bleu_4 += batch_bleu_4 / len(outputs)
+                bleu_1 += batch_bleu_1 / len(self.__test_loader)
+                bleu_4 += batch_bleu_4 / len(self.__test_loader)
 
 
 
 
 
 
-        result_str = "Test Performance: Loss: {}, Perplexity: {}, Bleu1: {}, Bleu4: {}".format(test_loss/iter,
-                                                                                               bleu1,
-                                                                                               bleu4)
+        result_str = "Test Performance: Loss: {}, Perplexity: {}, Bleu1: {}, Bleu4: {}".format(test_loss/i,
+                                                                                               bleu_1 / iter,
+                                                                                               bleu_4/ iter)
         self.__log(result_str)
 
-        return test_loss/i, bleu1, bleu4
+        return test_loss/i, bleu_1 / iter, bleu_4/ iter
 
     def __save_model(self):
         root_model_path = os.path.join(self.__experiment_dir, 'latest_model.pt')
