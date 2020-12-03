@@ -58,27 +58,41 @@ class cnnLSTM(nn.Module):
         outputs = self.linear(hiddens.squeeze(1))
 
         if deter:
-            for _ in range(max_len):
-                outputs = self.embed(predicted).unsqueeze(1)
-                hiddens, states = self.lstm(outputs, states)
-                outputs = self.linear(hiddens.squeeze(1))
+            for i in range(max_len):
+                if i == 0:
+                    with torch.no_grad():
+                        features = self.resnet(images)
+                    inputs = self.fc(features.view(features.size(0), -1)).unsqueeze(1)
+                    hiddens, states = self.lstm(features)
+                    outputs = self.linear(hiddens.squeeze(1))
+                else:
+                    inputs = self.embed(predicted).unsqueeze(1)
+                    hiddens, states = self.lstm(inputs, states)
+                    outputs = self.linear(hiddens.squeeze(1))
 
-                predicted = torch.max(outputs, 1)[1]
+                predicted = outputs.argmax(1)
                 sampled_ids.append(predicted.item())
 
-            return torch.stack(sampled_ids, 1)
+            return sampled_ids
 
         else:
-            for _ in range(max_len):
-                outputs = self.embed(predicted).squeeze(1)
-                hiddens, states = self.lstm(outputs, states)
-                outputs = self.linear(hiddens.squeeze(1))
+            for i in range(max_len):
+                if i == 0:
+                    with torch.no_grad():
+                        features = self.resnet(images)
+                    inputs = self.fc(features.view(features.size(0), -1)).unsqueeze(1)
+                    hiddens, states = self.lstm(features)
+                    outputs = self.linear(hiddens.squeeze(1))
+                else:
+                    inputs = self.embed(predicted)
+                    hiddens, states = self.lstm(inputs, states)
+                    outputs = self.linear(hiddens.squeeze(1))
 
                 probabilities = F.softmax(outputs.div(self.__generation_config['temperature']).squeeze(0).squeeze(0), dim=1) 
                 predicted_id = torch.multinomial(probabilities.data, 1)
                 sampled_ids.append(predicted_id)
 
-            return torch.cat(sampled_ids, 1)
+            return sampled_ids
 
         
 

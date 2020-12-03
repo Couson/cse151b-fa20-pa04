@@ -171,7 +171,8 @@ class Experiment(object):
                             break
                         elif predicted_word == '<start>':
                             continue
-                    predicted_word_list.append(predicted_word)
+
+                        predicted_word_list.append(predicted_word)
 
                     caption_word_list = self.__coco_test.loadAnns(img_ids[j])
                     caption_word_list = [nltk.tokenize.word_tokenize(str(cap).lower()) for cap in caption_word_list]
