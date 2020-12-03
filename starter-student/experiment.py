@@ -167,7 +167,7 @@ class Experiment(object):
 
                 for j in range(len(captions)):
                     predicted_word_list = []
-                    features = self.__model.resnet([images[j]])
+                    features = self.__model.resnet(images[j].unsqueeze(0))
                     features = self.__model.fc(features.view(features.size(0), -1))
                     output, hidden = self.__model.lstm(features)
                     output = self.__model.linear(output)
