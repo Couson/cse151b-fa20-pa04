@@ -10,6 +10,8 @@ import torch
 import torch.nn as nn
 import torchvision.models as models
 from torch.nn import Embedding, LSTM
+import torch.nn.functional as F
+
 def get_model(config_data, vocab):
     hidden_size = config_data['model']['hidden_size']
     embedding_size = config_data['model']['embedding_size']
@@ -45,6 +47,41 @@ class cnnLSTM(nn.Module):
         inputs = torch.cat((features.unsqueeze(1), embeddings), 1)
         hiddens, _ = self.lstm(inputs)
         return self.linear(hiddens)
+
+    def sample(self, images, max_len, deter):
+
+        sampled_ids = []
+        with torch.no_grad():
+            features = self.resnet(images)
+        features = self.fc(features.view(features.size(0), -1)).unsqueeze(1)
+        hiddens, states = self.lstm(features)
+        outputs = self.linear(hiddens.squeeze(1))
+
+        if deter:
+            for _ in range(max_len):
+                outputs = self.embed(predicted).unsqueeze(1)
+                hiddens, states = self.lstm(outputs, states)
+                outputs = self.linear(hiddens.squeeze(1))
+
+                predicted = torch.max(outputs, 1)[1]
+                sampled_ids.append(predicted.item())
+
+            return torch.stack(sampled_ids, 1)
+
+        else:
+            for _ in range(max_len):
+                outputs = self.embed(predicted).squeeze(1)
+                hiddens, states = self.lstm(outputs, states)
+                outputs = self.linear(hiddens.squeeze(1))
+
+                probabilities = F.softmax(outputs.div(self.__generation_config['temperature']).squeeze(0).squeeze(0), dim=1) 
+                predicted_id = torch.multinomial(probabilities.data, 1)
+                sampled_ids.append(predicted_id)
+
+            return torch.cat(sampled_ids, 1)
+
+        
+
 
 
 class cnnRNN(nn.Module):

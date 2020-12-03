@@ -160,34 +160,18 @@ class Experiment(object):
                 batch_bleu_1 = 0.0
                 batch_bleu_4 = 0.0
                 
-
-                for j in range(len(captions)):
+                predicted_ids = self.__model.sample(images, self.__generation_config['max_length'], self.__generation_config['deterministic'])
+                for j in range(len(predicted_ids)):
                     predicted_word_list = []
-                    features = self.__model.resnet(images[j].unsqueeze(0))
-                    features = self.__model.fc(features.view(features.size(0), -1)).unsqueeze(0)
-                    output, hidden = self.__model.lstm(features)
-                    output = self.__model.linear(output)
-
-                    for _ in range(self.__generation_config['max_length']):
-                        
-                        embeddings = self.__model.embed(output).unsqueeze(0)
-                        print(embeddings.size())
-                        output, hidden = self.__model.lstm(embeddings, hidden)
-                        output = self.__model.linear(output)
-
-                        if self.__generation_config['deterministic']:
-                            _, predicted_id = outputs.max(1)
-                        else:
-                            probabilities = F.softmax(output.div(self.__generation_config['temperature']).squeeze(0), dim=1) 
-                            predicted_id = torch.multinomial(probabilities.data, 1)
-
-                        predicted_word = self.__vocab(predicted_id)
-                        
+                    for k in range(self.__generation_config['max_length']):
+                    
+                        predicted_word = self.__vocab(predicted_ids[j,k])
+                    
                         if predicted_word == '<end>':
                             break
                         elif predicted_word == '<start>':
                             continue
-                        predicted_word_list.append(predicted_word)
+                    predicted_word_list.append(predicted_word)
 
                     caption_word_list = self.__coco_test.loadAnns(img_ids[j])
                     caption_word_list = [nltk.tokenize.word_tokenize(str(cap).lower()) for cap in caption_word_list]
@@ -195,8 +179,8 @@ class Experiment(object):
                     batch_bleu_1 += bleu1(caption_word_list, predicted_word_list)
                     batch_bleu_4 += bleu4(caption_word_list, predicted_word_list)
 
-                bleu_1 += batch_bleu_1 / len(self.__test_loader)
-                bleu_4 += batch_bleu_4 / len(self.__test_loader)
+                bleu_1 += batch_bleu_1 / j
+                bleu_4 += batch_bleu_4 / j
 
 
 
