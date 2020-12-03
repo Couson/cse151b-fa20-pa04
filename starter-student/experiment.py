@@ -160,13 +160,13 @@ class Experiment(object):
                 batch_bleu_1 = 0.0
                 batch_bleu_4 = 0.0
                 
-                predicted_ids = self.__model.sample(images, self.__generation_config['max_length'], self.__generation_config['deterministic'])
+                predicted_ids = self.__model.sample(images, self.__generation_config['max_length'], self.__generation_config['deterministic'], self.__generation_config['temperature'])
                 for j in range(len(predicted_ids)):
                     predicted_word_list = []
                     for k in range(self.__generation_config['max_length']):
                     
-                        predicted_word = self.__vocab.idx2word[predicted_ids[j][k].item()]
-                    
+                        predicted_word = self.__vocab.idx2word[predicted_ids[k][j].item()]
+                        print(predicted_word)
                         if predicted_word == '<end>':
                             break
                         elif predicted_word == '<start>':
@@ -174,15 +174,14 @@ class Experiment(object):
 
                         predicted_word_list.append(predicted_word)
 
-
                     annotationIds = self.__coco_test.getAnnIds(img_ids[j])
                     annotations = self.__coco_test.loadAnns(annotationIds)
                     caption_word_list = [i['caption'] for i in annotations]
                     caption_word_list = [nltk.tokenize.word_tokenize(str(cap).lower()) for cap in caption_word_list]
-
+                    
                     batch_bleu_1 += bleu1(caption_word_list, predicted_word_list)
                     batch_bleu_4 += bleu4(caption_word_list, predicted_word_list)
-
+                    
                 bleu_1 += batch_bleu_1 / j
                 bleu_4 += batch_bleu_4 / j
 

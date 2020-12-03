@@ -48,7 +48,7 @@ class cnnLSTM(nn.Module):
         hiddens, _ = self.lstm(inputs)
         return self.linear(hiddens)
 
-    def sample(self, images, max_len, deter):
+    def sample(self, images, max_len, deter, temp = None):
         sampled_ids = []
         if deter:
             for i in range(max_len):
@@ -81,7 +81,7 @@ class cnnLSTM(nn.Module):
                     hiddens, states = self.lstm(inputs, states)
                     outputs = self.linear(hiddens.squeeze(1))
 
-                probabilities = F.softmax(outputs.div(self.__generation_config['temperature']).squeeze(0).squeeze(0), dim=1) 
+                probabilities = F.softmax(outputs.div(temp).squeeze(0).squeeze(0), dim=1) 
                 predicted_id = torch.multinomial(probabilities.data, 1)
                 sampled_ids.append(predicted_id)
 
