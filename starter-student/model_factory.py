@@ -62,7 +62,7 @@ class cnnLSTM(nn.Module):
                 if i == 0:
                     with torch.no_grad():
                         features = self.resnet(images)
-                    inputs = self.fc(features.view(features.size(0), -1)).unsqueeze(1)
+                    inputs = self.fc(features.view(features.size(0), -1))
                     hiddens, states = self.lstm(features)
                     outputs = self.linear(hiddens.squeeze(1))
                 else:
