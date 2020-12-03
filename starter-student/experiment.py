@@ -167,26 +167,23 @@ class Experiment(object):
                     predicted_word_list = []
                     features = self.__model.resnet(images[j])
                     features = self.__model.fc(features.view(features.size(0), -1))
-                    
-                    embeddings = self.__model.embed(captions[j,0])
-
-                    inputs = torch.cat((features.unsqueeze(1), embeddings), 1)
                     output, hidden = self.__model.lstm(features)
                     output = self.__model.linear(output)
 
                     for _ in range(self.__generation_config['max_length']):
                         
                         embeddings = self.__model.embed(output)
-                        output, hidden = self.__model.lstm(features, hidden)
+                        output, hidden = self.__model.lstm(embeddings, hidden)
                         output = self.__model.linear(output)
 
 
                         probabilities = F.softmax(output.div(self.__generation_config['temperature']).squeeze(0).squeeze(0), dim=1) 
                         predicted_id = torch.multinomial(probabilities.data, 1)
+
                         predicted_word = self.__vocab(predicted_id)
                         predicted_word_list.append(predicted_word)
 
-                    caption_word_list = self.__coco_test.loadAnns(img_ids)
+                    caption_word_list = self.__coco_test.loadAnns(img_ids[j])
                     caption_word_list = [nltk.tokenize.word_tokenize(str(cap).lower()) for cap in caption_word_list]
                     batch_bleu_1 += bleu1(caption_word_list, predicted_word_list)
                     batch_bleu_4 += bleu4(caption_word_list, predicted_word_list)
@@ -199,7 +196,7 @@ class Experiment(object):
 
 
 
-        result_str = "Test Performance: Loss: {}, Perplexity: {}, Bleu1: {}, Bleu4: {}".format(test_loss/i,
+        result_str = "Test Performance: Loss: {}, Bleu1: {}, Bleu4: {}".format(test_loss/i,
                                                                                                bleu_1 / iter,
                                                                                                bleu_4/ iter)
         self.__log(result_str)
