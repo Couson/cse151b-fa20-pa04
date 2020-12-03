@@ -174,7 +174,10 @@ class Experiment(object):
 
                         predicted_word_list.append(predicted_word)
 
-                    caption_word_list = self.__coco_test.loadAnns(img_ids[j])
+
+                    annotationIds = self.__coco_test.getAnnIds(img_ids[j])
+                    annotations = self.__coco_test.loadAnns(annotationIds)
+                    caption_word_list = [i['caption'] for i in annotations]
                     caption_word_list = [nltk.tokenize.word_tokenize(str(cap).lower()) for cap in caption_word_list]
 
                     batch_bleu_1 += bleu1(caption_word_list, predicted_word_list)
