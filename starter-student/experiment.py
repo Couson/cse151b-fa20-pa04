@@ -48,9 +48,9 @@ class Experiment(object):
         self.__model = get_model(config_data, self.__vocab)
 
         # TODO: Set these Criterion and Optimizers Correctly
-        self.__criterion = torch.nn.NLLLoss()
+        self.__criterion = torch.nn.CrossEntropyLoss()
+        
         self.__optimizer = torch.optim.Adam
-
         self.__init_model()
 
         # Load Experiment Data if available
@@ -80,10 +80,12 @@ class Experiment(object):
     # Main method to run your experiment. Should be self-explanatory.
     def run(self):
         start_epoch = int(self.__current_epoch)
-        print(start_epoch, self.__epochs)
+        params = list(self.__model.linear.parameters()) + list(self.__model.lstm.parameters()) + list(self.__model.embed.parameters()) + list(self.__model.fc.parameters())
+        self.__optimizer = self.__optimizer(params = params, lr = self.__learning_rate)
+        
         for epoch in range(start_epoch, self.__epochs):  # loop over the dataset multiple times
             start_time = datetime.now()
-            self.__current_epoch = epoch
+            self.__current_epoch = epoch            
             train_loss = self.__train()
             val_loss = self.__val()
             self.__record_stats(train_loss, val_loss)
@@ -94,20 +96,21 @@ class Experiment(object):
     def __train(self):
         self.__model.train()
         training_loss = 0
-        params = list(self.__model.linear.parameters()) + list(self.__model.lstm.parameters()) + list(self.__model.embed.parameters()) + list(self.__model.fc.parameters())
-        self.__optimizer = self.__optimizer(params = params, lr = self.__learning_rate)
+
         for i, (images, captions, _) in enumerate(self.__train_loader):
             if torch.cuda.is_available():
                 images = images.cuda()
                 captions = captions.cuda()
             
             outputs = self.__model(images, captions)
+#             print(outputs, captions)
             loss = self.__criterion(outputs.view(-1, len(self.__vocab)), captions.view(-1))
+            training_loss += loss.item()
             
             self.__optimizer.zero_grad()
             loss.backward()
             self.__optimizer.step()
-            training_loss += loss.item()
+            
             if i % 100 == 0:
                 print("BATCH:" + str(i))
                 print("Training Loss:" + str(training_loss))
@@ -182,11 +185,16 @@ class Experiment(object):
                             predicted_id = torch.multinomial(probabilities.data, 1)
 
                         predicted_word = self.__vocab(predicted_id)
+                        
+                        if predicted_word == '<end>':
+                            break
+                        elif predicted_word == '<start>':
+                            continue
                         predicted_word_list.append(predicted_word)
 
                     caption_word_list = self.__coco_test.loadAnns(img_ids[j])
                     caption_word_list = [nltk.tokenize.word_tokenize(str(cap).lower()) for cap in caption_word_list]
-                    
+
                     batch_bleu_1 += bleu1(caption_word_list, predicted_word_list)
                     batch_bleu_4 += bleu4(caption_word_list, predicted_word_list)
 
