@@ -111,7 +111,7 @@ class Experiment(object):
             if i % 100 == 0:
                 print("BATCH:" + str(i))
                 print("Training Loss:" + str(training_loss))
-        self.__training_losses.append(training_loss/i)
+
         return training_loss/i
 
     # TODO: Perform one Pass on the validation set and return loss value. You may also update your best model here.
@@ -130,7 +130,6 @@ class Experiment(object):
                 loss = self.__criterion(outputs.view(-1, len(self.__vocab)), captions.view(-1))
                 val_loss += loss.item()
 
-        self.__val_losses.append(val_loss/i)
         return val_loss/i
 
     # TODO: Implement your test function here. Generate sample captions and evaluate loss and
@@ -176,15 +175,18 @@ class Experiment(object):
                         output, hidden = self.__model.lstm(embeddings, hidden)
                         output = self.__model.linear(output)
 
-
-                        probabilities = F.softmax(output.div(self.__generation_config['temperature']).squeeze(0).squeeze(0), dim=1) 
-                        predicted_id = torch.multinomial(probabilities.data, 1)
+                        if self.__generation_config['deterministic']:
+                            _, predicted_id = outputs.max(1)
+                        else:
+                            probabilities = F.softmax(output.div(self.__generation_config['temperature']).squeeze(0), dim=1) 
+                            predicted_id = torch.multinomial(probabilities.data, 1)
 
                         predicted_word = self.__vocab(predicted_id)
                         predicted_word_list.append(predicted_word)
 
                     caption_word_list = self.__coco_test.loadAnns(img_ids[j])
                     caption_word_list = [nltk.tokenize.word_tokenize(str(cap).lower()) for cap in caption_word_list]
+                    
                     batch_bleu_1 += bleu1(caption_word_list, predicted_word_list)
                     batch_bleu_4 += bleu4(caption_word_list, predicted_word_list)
 
