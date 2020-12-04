@@ -80,7 +80,7 @@ class Experiment(object):
     # Main method to run your experiment. Should be self-explanatory.
     def run(self):
         start_epoch = int(self.__current_epoch)
-        params = list(self.__model.linear.parameters()) + list(self.__model.lstm.parameters()) + list(self.__model.embed.parameters()) + list(self.__model.fc.parameters())
+        params = list(self.__model.linear.parameters()) + list(self.__model.decoder.parameters()) + list(self.__model.embed.parameters()) + list(self.__model.fc.parameters())
         self.__optimizer = self.__optimizer(params = params, lr = self.__learning_rate)
         
         for epoch in range(start_epoch, self.__epochs):  # loop over the dataset multiple times
@@ -103,7 +103,8 @@ class Experiment(object):
                 captions = captions.cuda()
             
             outputs = self.__model(images, captions)
-#             print(outputs, captions)
+#             print(outputs.size(), captions.size())
+            
             loss = self.__criterion(outputs.view(-1, len(self.__vocab)), captions.view(-1))
             training_loss += loss.item()
             
@@ -151,7 +152,7 @@ class Experiment(object):
                 test_loss += loss.item()
 
             
-
+            goods, bads = 0, 0
             for iter, (images, captions, img_ids) in enumerate(self.__test_loader):
                 if torch.cuda.is_available():
                     images = images.cuda()
@@ -184,11 +185,13 @@ class Experiment(object):
                 bleu_1 += batch_bleu_1 / j
                 bleu_4 += batch_bleu_4 / j
 
-
-
-
-
-
+                if bleu4(caption_word_list, predicted_word_list) < 4 and bad <= 10:
+                    print(img_ids[j], caption_word_list, predicted_word_list)
+                    bads += 1
+                elif bleu4(caption_word_list, predicted_word_list) >10 and good <= 20:
+                    print(img_ids[j], caption_word_list, predicted_word_list)
+                    goods += 1
+                    
         result_str = "Test Performance: Loss: {}, Bleu1: {}, Bleu4: {}".format(test_loss/i,
                                                                                                bleu_1 / iter,
                                                                                                bleu_4/ iter)
