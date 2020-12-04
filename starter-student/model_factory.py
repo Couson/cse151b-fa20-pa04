@@ -82,8 +82,8 @@ class cnnLSTM(nn.Module):
                     outputs = self.linear(hiddens.squeeze(1))
 
                 probabilities = F.softmax(outputs.div(temp).squeeze(0).squeeze(0), dim=1) 
-                predicted_id = torch.multinomial(probabilities.data, 1)
-                sampled_ids.append(predicted_id)
+                predicted= torch.multinomial(probabilities.data, 1)
+                sampled_ids.append(predicted)
 
             return sampled_ids
 

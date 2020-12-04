@@ -166,7 +166,6 @@ class Experiment(object):
                     for k in range(self.__generation_config['max_length']):
                     
                         predicted_word = self.__vocab.idx2word[predicted_ids[k][j].item()]
-                        print(predicted_word)
                         if predicted_word == '<end>':
                             break
                         elif predicted_word == '<start>':
