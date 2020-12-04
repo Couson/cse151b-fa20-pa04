@@ -103,7 +103,8 @@ class Experiment(object):
                 captions = captions.cuda()
             
             outputs = self.__model(images, captions)
-#             print(outputs, captions)
+#             print(outputs.size(), captions.size())
+            
             loss = self.__criterion(outputs.view(-1, len(self.__vocab)), captions.view(-1))
             training_loss += loss.item()
             

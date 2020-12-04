@@ -17,13 +17,13 @@
     "learning_rate": 5e-4
   },
   "model": {
-    "hidden_size": 512,
-    "embedding_size": 300,
-    "model_type": "LSTM"
+    "hidden_size": 256,
+    "embedding_size": 150,
+    "model_type": "LSTM1"
   },
   "generation": {
     "max_length": 20,
-    "deterministic": true,
+    "deterministic": false,
     "temperature": 0.1
   }
 }

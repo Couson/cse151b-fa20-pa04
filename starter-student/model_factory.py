@@ -19,18 +19,19 @@ def get_model(config_data, vocab):
 
     # You may add more parameters if you want
     
-    if model_type == 'LSTM':
-        return cnnLSTM(hidden_size, embedding_size, vocab)
+    if model_type == 'LSTM1':
+        return cnnLSTM1(hidden_size, embedding_size, vocab)
+    elif model_type == 'LSTM2':
+        return cnnLSTM2(hidden_size, embedding_size, vocab)
     elif model_type == 'RNN':
         return cnnRNN(hidden_size, embedding_size, vocab)
     else:
         raise ValueError('Invalid Model Name')
-
-
-class cnnLSTM(nn.Module):
+    
+class cnnLSTM1(nn.Module):
     def __init__(self, hidden_size, embedding_size, vocab):
         """Load the pretrained ResNet-50 and replace top fc layer."""
-        super(cnnLSTM, self).__init__()
+        super(cnnLSTM1, self).__init__()
         resnet = models.resnet50(pretrained=True)
         modules = list(resnet.children())[:-1] 
         self.resnet = nn.Sequential(*modules)
@@ -44,10 +45,12 @@ class cnnLSTM(nn.Module):
             features = self.resnet(images)
         features = self.fc(features.view(features.size(0), -1))
         embeddings = self.embed(captions[:,:-1])
+        
         inputs = torch.cat((features.unsqueeze(1), embeddings), 1)
         hiddens, _ = self.decoder(inputs)
-        return self.linear(hiddens)
-
+        out = self.linear(hiddens)
+        return out
+    
     def sample(self, images, max_len, deter, temp = None):
         sampled_ids = []
         if deter:
@@ -88,7 +91,23 @@ class cnnLSTM(nn.Module):
             return sampled_ids
 
         
-
+class cnnLSTM2(cnnLSTM1):
+    def __init__(self, hidden_size, embedding_size, vocab):
+        super().__init__(hidden_size, embedding_size, vocab)
+        self.decoder = LSTM(input_size=embedding_size * 2, hidden_size=hidden_size, num_layers = 1, batch_first=True)
+    
+    def forward(self, images, captions):
+        with torch.no_grad():
+            features = self.resnet(images)
+        features = self.fc(features.view(features.size(0), -1))
+        embeddings = self.embed(captions)
+        
+        embed_dim = embeddings.size()[1]        
+        inputs = torch.cat((features.unsqueeze(1).repeat(1, embed_dim, 1), embeddings), 2)
+        
+        hiddens, _ = self.decoder(inputs)
+        out = self.linear(hiddens)
+        return out
 
 
 class cnnRNN(nn.Module):
