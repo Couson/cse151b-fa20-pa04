@@ -73,10 +73,11 @@ class Experiment(object):
             os.makedirs(self.__experiment_dir)
 
     def __init_model(self):
+#         device = 5
         if torch.cuda.is_available():
             self.__model = self.__model.cuda().float()
             self.__criterion = self.__criterion.cuda()
-
+        torch.cuda.empty_cache()
     # Main method to run your experiment. Should be self-explanatory.
     def run(self):
         start_epoch = int(self.__current_epoch)
@@ -161,12 +162,13 @@ class Experiment(object):
                 batch_bleu_1 = 0.0
                 batch_bleu_4 = 0.0
                 
-                predicted_ids = self.__model.sample(images, self.__generation_config['max_length'], self.__generation_config['deterministic'], self.__generation_config['temperature'])
+                predicted_ids = self.__model.sample(images, captions, self.__generation_config['max_length'], self.__generation_config['deterministic'], self.__generation_config['temperature'])
                 for j in range(len(predicted_ids)):
                     predicted_word_list = []
                     for k in range(self.__generation_config['max_length']):
                     
                         predicted_word = self.__vocab.idx2word[predicted_ids[k][j].item()]
+                        print(predicted_word)
                         if predicted_word == '<end>':
                             break
                         elif predicted_word == '<start>':

@@ -94,6 +94,15 @@ class cnnLSTM1(nn.Module):
 class cnnLSTM2(cnnLSTM1):
     def __init__(self, hidden_size, embedding_size, vocab):
         super().__init__(hidden_size, embedding_size, vocab)
+        
+#         resnet = models.resnet50(pretrained=True)
+#         modules = list(resnet.children())[:-1] 
+#         self.resnet = nn.Sequential(*modules)
+#         self.fc = nn.Linear(resnet.fc.in_features, embedding_size)
+#         self.embed = Embedding(len(vocab), embedding_size)
+#         self.linear = nn.Linear(hidden_size, len(vocab))
+        
+        
         self.decoder = LSTM(input_size=embedding_size * 2, hidden_size=hidden_size, num_layers = 1, batch_first=True)
     
     def forward(self, images, captions):
@@ -113,19 +122,21 @@ class cnnLSTM2(cnnLSTM1):
         out = self.linear(hiddens)
         return out
     
-    def sample(self, images, max_len, deter, temp = None):
+    def sample(self, images, captions, max_len, deter, temp = None):
         sampled_ids = []
         for i in range(max_len):
-            if i == 0:
-                zero_padding = torch.zeros([images.size()[0], images.size()[1]], dtype = torch.long).to('cuda')
-                
+            if i == 0:                
                 with torch.no_grad():
-                    features = self.resnet(images)
-                
+                    features = self.resnet(images)                
                 features = self.fc(features.view(features.size(0), -1)).unsqueeze(1)
+                print(features.size())
+                
+                zero_padding = torch.zeros([captions.size()[0], 1], dtype = torch.long).to('cuda')
+                print(zero_padding.size())
+                
                 embeddings = self.embed(zero_padding)
-
-                inputs = torch.cat((features, embeddings), 2)
+                print(embeddings.size())
+                
                 hiddens, states = self.decoder(inputs)
                 outputs = self.linear(hiddens.squeeze(1))
                 
