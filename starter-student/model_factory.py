@@ -51,7 +51,7 @@ class cnnLSTM1(nn.Module):
         out = self.linear(hiddens)
         return out
     
-    def sample(self, images, max_len, deter, temp = None):
+    def sample(self, images, captions, max_len, deter, temp = None):
         sampled_ids = []
         if deter:
             for i in range(max_len):
