@@ -111,4 +111,42 @@ class cnnRNN(nn.Module):
         inputs = torch.cat((features.unsqueeze(1), embeddings), 1)
         hiddens, _ = self.decoder(inputs)
         return self.linear(hiddens)
-        
+    
+    def sample(self, images, max_len, deter, temp = None):
+        sampled_ids = []
+        if deter:
+            for i in range(max_len):
+                if i == 0:
+                    with torch.no_grad():
+                        features = self.resnet(images)
+                    inputs = self.fc(features.view(features.size(0), -1)).unsqueeze(1)
+                    hiddens, states = self.decoder(inputs)
+                    outputs = self.linear(hiddens.squeeze(1))
+                else:
+                    inputs = self.embed(predicted).unsqueeze(1)
+                    hiddens, states = self.decoder(inputs, states)
+                    outputs = self.linear(hiddens.squeeze(1))
+
+                predicted = outputs.argmax(1)
+                sampled_ids.append(predicted)
+
+            return sampled_ids
+
+        else:
+            for i in range(max_len):
+                if i == 0:
+                    with torch.no_grad():
+                        features = self.resnet(images)
+                    inputs = self.fc(features.view(features.size(0), -1)).unsqueeze(1)
+                    hiddens, states = self.decoder(inputs)
+                    outputs = self.linear(hiddens.squeeze(1))
+                else:
+                    inputs = self.embed(predicted)
+                    hiddens, states = self.decoder(inputs, states)
+                    outputs = self.linear(hiddens.squeeze(1))
+
+                probabilities = F.softmax(outputs.div(temp).squeeze(0).squeeze(0), dim=1) 
+                predicted = torch.multinomial(probabilities.data, 1)
+                sampled_ids.append(predicted)
+
+            return sampled_ids
