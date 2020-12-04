@@ -131,13 +131,13 @@ class cnnLSTM2(cnnLSTM1):
                 features = self.fc(features.view(features.size(0), -1)).unsqueeze(1)
                 print(features.size())
                 
-                zero_padding = torch.zeros([captions.size()[0], 1], dtype = torch.long).to('cuda')
+                zero_padding = torch.zeros([captions.size()[0], 1], dtype = torch.float).to('cuda')
                 print(zero_padding.size())
                 
                 embeddings = self.embed(zero_padding)
                 print(embeddings.size())
 
-                inputs = torch.cat((features.unsqueeze(1), embeddings), 2)
+                inputs = torch.cat((features, embeddings), 2)
                 hiddens, states = self.decoder(inputs)
                 outputs = self.linear(hiddens.squeeze(1))
                 
