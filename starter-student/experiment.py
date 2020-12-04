@@ -152,8 +152,7 @@ class Experiment(object):
                 loss = self.__criterion(outputs.view(-1, len(self.__vocab)), captions.view(-1))
                 test_loss += loss.item()
 
-            
-            goods, bads = 0, 0
+
             for iter, (images, captions, img_ids) in enumerate(self.__test_loader):
                 if torch.cuda.is_available():
                     images = images.cuda()
@@ -185,13 +184,6 @@ class Experiment(object):
                     
                 bleu_1 += batch_bleu_1 / j
                 bleu_4 += batch_bleu_4 / j
-
-                if bleu4(caption_word_list, predicted_word_list) < 6 and bads <= 10:
-                    print(img_ids[j], caption_word_list, predicted_word_list)
-                    bads += 1
-                elif bleu4(caption_word_list, predicted_word_list) > 10 and goods <= 10:
-                    print(img_ids[j], caption_word_list, predicted_word_list)
-                    goods += 1
                     
         result_str = "Test Performance: Loss: {}, Bleu1: {}, Bleu4: {}".format(test_loss/i,
                                                                                                bleu_1 / iter,
