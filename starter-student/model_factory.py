@@ -131,7 +131,7 @@ class cnnLSTM2(cnnLSTM1):
                 features = self.fc(features.view(features.size(0), -1)).unsqueeze(1)
                 print(features.size())
                 
-                zero_padding = torch.zeros([captions.size()[0], 1], dtype = torch.float).to('cuda')
+                zero_padding = torch.zeros([captions.size()[0], 1], dtype = torch.long).to('cuda')
                 print(zero_padding.size())
                 
                 embeddings = self.embed(zero_padding)
