@@ -136,7 +136,8 @@ class cnnLSTM2(cnnLSTM1):
                 
                 embeddings = self.embed(zero_padding)
                 print(embeddings.size())
-                
+
+                inputs = torch.cat((features.unsqueeze(1), embeddings), 2)
                 hiddens, states = self.decoder(inputs)
                 outputs = self.linear(hiddens.squeeze(1))
                 
