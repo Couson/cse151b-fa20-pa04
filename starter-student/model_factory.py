@@ -122,7 +122,6 @@ class cnnLSTM2(cnnLSTM1):
                 with torch.no_grad():
                     features = self.resnet(images)
                 
-                
                 features = self.fc(features.view(features.size(0), -1)).unsqueeze(1)
                 embeddings = self.embed(zero_padding)
 
@@ -133,7 +132,7 @@ class cnnLSTM2(cnnLSTM1):
                 
             else:
                 ### predicted cat img
-                predicted = torch.cat((predicted, features), 2)
+                predicted = torch.cat((features, predicted), 2)
                 inputs = self.embed(predicted)
                 hiddens, states = self.decoder(inputs, states)
                 outputs = self.linear(hiddens.squeeze(1))
