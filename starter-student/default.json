@@ -19,7 +19,7 @@
   "model": {
     "hidden_size": 256,
     "embedding_size": 150,
-    "model_type": "LSTM1"
+    "model_type": "LSTM2"
   },
   "generation": {
     "max_length": 20,

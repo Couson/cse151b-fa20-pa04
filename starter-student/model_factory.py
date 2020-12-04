@@ -97,10 +97,14 @@ class cnnLSTM2(cnnLSTM1):
         self.decoder = LSTM(input_size=embedding_size * 2, hidden_size=hidden_size, num_layers = 1, batch_first=True)
     
     def forward(self, images, captions):
+        
         with torch.no_grad():
             features = self.resnet(images)
-        features = self.fc(features.view(features.size(0), -1))
-        embeddings = self.embed(captions)
+        features = self.fc(features.view(features.size(0), -1))        
+        
+        zero_padding = torch.zeros([captions.size()[0], 1], dtype = torch.long).to('cuda')
+        padded_captions = torch.cat((zero_padding, captions), 1)
+        embeddings = self.embed(padded_captions[:, :-1])
         
         embed_dim = embeddings.size()[1]        
         inputs = torch.cat((features.unsqueeze(1).repeat(1, embed_dim, 1), embeddings), 2)
@@ -108,7 +112,36 @@ class cnnLSTM2(cnnLSTM1):
         hiddens, _ = self.decoder(inputs)
         out = self.linear(hiddens)
         return out
+    
+    def sample(self, images, max_len, deter, temp = None):
+        sampled_ids = []
+        for i in range(max_len):
+            if i == 0:
+                zero_padding = torch.zeros([images.size()[0], images.size()[1]], dtype = torch.long).to('cuda')
+                padded_images = torch.cat((zero_padding, images), 2)
+                
+                with torch.no_grad():
+                    features = self.resnet(images)
+                
+                
+                inputs = self.fc(features.view(features.size(0), -1)).unsqueeze(1)
+                
+                hiddens, states = self.decoder(inputs)
+                outputs = self.linear(hiddens.squeeze(1))
+                
+                
+            else:
+                ### predicted cat img
+                predicted = torch.cat((predicted, images), 2)
+                inputs = self.embed(predicted)
+                hiddens, states = self.decoder(inputs, states)
+                outputs = self.linear(hiddens.squeeze(1))
 
+            probabilities = F.softmax(outputs.div(temp).squeeze(0).squeeze(0), dim=1) 
+            predicted = torch.multinomial(probabilities.data, 1)
+            sampled_ids.append(predicted)
+
+        return sampled_ids
 
 class cnnRNN(nn.Module):
     def __init__(self, hidden_size, embedding_size, vocab):
@@ -119,7 +152,7 @@ class cnnRNN(nn.Module):
         self.resnet = nn.Sequential(*modules)
         self.fc = nn.Linear(resnet.fc.in_features, embedding_size)
         self.embed = Embedding(len(vocab), embedding_size)
-        self.decoder = nn.RNN(input_size=embedding_size, hidden_size=hidden_size, num_layers = 1, batch_first=True)
+        self.decoder = nn.RNN(input_size = embedding_size, hidden_size=hidden_size, num_layers = 1, batch_first=True)
         self.linear = nn.Linear(hidden_size, len(vocab))
 
     def forward(self, images, captions):
