@@ -118,21 +118,22 @@ class cnnLSTM2(cnnLSTM1):
         for i in range(max_len):
             if i == 0:
                 zero_padding = torch.zeros([images.size()[0], images.size()[1]], dtype = torch.long).to('cuda')
-                padded_images = torch.cat((zero_padding, images), 2)
                 
                 with torch.no_grad():
                     features = self.resnet(images)
                 
                 
-                inputs = self.fc(features.view(features.size(0), -1)).unsqueeze(1)
-                
+                features = self.fc(features.view(features.size(0), -1)).unsqueeze(1)
+                embeddings = self.embed(zero_padding)
+
+                inputs = torch.cat((features, embeddings), 2)
                 hiddens, states = self.decoder(inputs)
                 outputs = self.linear(hiddens.squeeze(1))
                 
                 
             else:
                 ### predicted cat img
-                predicted = torch.cat((predicted, images), 2)
+                predicted = torch.cat((predicted, features), 2)
                 inputs = self.embed(predicted)
                 hiddens, states = self.decoder(inputs, states)
                 outputs = self.linear(hiddens.squeeze(1))
